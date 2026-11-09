@@ -1,6 +1,6 @@
-#  Manual de Instalação — SuaMarca (Gestão de Clientes)
+#  Manual de Instalação — iiKliente (Gestão de Clientes)
 
-Este manual explica passo a passo como instalar e rodar o sistema **SuaMarca** no seu computador usando o **XAMPP** (Apache + PHP + MySQL/MariaDB) e o **Composer**.
+Este manual explica passo a passo como instalar e rodar o sistema **iiKliente** no seu computador usando o **XAMPP** (Apache + PHP + MySQL/MariaDB) e o **Composer**.
 
 ---
 

@@ -1,6 +1,6 @@
 #  Guia do Usuário
 
-Bem-vindo ao **SuaMarca - Sistema de Gestão de Clientes**. Este documento explica como utilizar todas as telas e recursos do sistema de maneira simples e intuitiva.
+Bem-vindo ao **iiKliente - Sistema de Gestão de Clientes**. Este documento explica como utilizar todas as telas e recursos do sistema de maneira simples e intuitiva.
 
 ---
 

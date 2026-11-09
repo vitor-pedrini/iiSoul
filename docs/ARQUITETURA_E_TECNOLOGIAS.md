@@ -1,6 +1,6 @@
-#  Arquitetura, Tecnologias e Segurança — SuaMarca
+#  Arquitetura, Tecnologias e Segurança — iiKliente
 
-Este documento apresenta a justificativa técnica das tecnologias utilizadas no projeto **SuaMarca — Gestão de Clientes**, demonstrando como cada requisito foi implementado de forma limpa, comentada por blocos e fácil de manter.
+Este documento apresenta a justificativa técnica das tecnologias utilizadas no projeto **iiKliente — Gestão de Clientes**, demonstrando como cada requisito foi implementado de forma limpa, comentada por blocos e fácil de manter.
 
 ---
 
