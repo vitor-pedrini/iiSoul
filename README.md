@@ -18,7 +18,7 @@ Sistema web completo desenvolvido como projeto prático na temática **Gestão d
 
 ---
 
-## 💡 Sobre o Projeto
+## Sobre o Projeto
 
 O **iiKliente** centraliza o ciclo de vida completo entre prestadores de serviços digitais (freelancers, agências ou empresas) e seus clientes:
 1. **Captação:** Solicitação pública de orçamento com calculadora interativa e formulário de briefing.
@@ -34,7 +34,7 @@ O **iiKliente** centraliza o ciclo de vida completo entre prestadores de serviç
 
 ---
 
-## 🚀 Funcionalidades Implementadas
+## Funcionalidades Implementadas
 
 ### Requisitos Essenciais
 - **Autenticação Completa:** Login, logout com destruição de sessão e proteção de rotas por perfil (`empresa` e `cliente`).
@@ -86,7 +86,7 @@ O **iiKliente** centraliza o ciclo de vida completo entre prestadores de serviç
 
 ---
 
-## 📦 Manual de Instalação e Configuração
+## Manual de Instalação e Configuração
 
 ### Pré-requisitos
 - **XAMPP** (ou WampServer / Docker) com **PHP 8.1 ou superior** e **MySQL/MariaDB**.
@@ -132,7 +132,7 @@ O **iiKliente** centraliza o ciclo de vida completo entre prestadores de serviç
 
 ---
 
-## 📖 Guia do Usuário
+## Guia do Usuário
 
 ### Acesso da Empresa (Prestador de Serviço)
 1. Acesse `http://localhost/projetos/IISoul/login` e informe o login da empresa.
@@ -158,7 +158,7 @@ O **iiKliente** centraliza o ciclo de vida completo entre prestadores de serviç
 
 ---
 
-## 🔑 Contas de Acesso Padrão
+## Contas de Acesso Padrão
 
 Criadas automaticamente pelo script de migração:
 
@@ -171,7 +171,7 @@ Criadas automaticamente pelo script de migração:
 
 ---
 
-## 📁 Estrutura de Pastas do Projeto
+## Estrutura de Pastas do Projeto
 
 ```text
 IISoul/
@@ -217,7 +217,7 @@ IISoul/
 
 ---
 
-## 👤 Autor
+## Autor
 
 Desenvolvido por **Vitor Hugo Dos Santos Pedrini**  
 E-mail: [vitorh.pedrini@gmail.com](mailto:vitorh.pedrini@gmail.com)  
