@@ -1,0 +1,14 @@
+# =========================================================
+# .htaccess - Roteamento Front-Controller (MVC)
+# =========================================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Se for uma pasta ou arquivo estatico real de CSS, JS, imagem ou fonte, entrega direto
+    RewriteCond %{REQUEST_URI} ^.*/(assets|storage)/ [NC]
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Todas as outras rotas (.html, .php ou URLs amigaveis) passam pelo index.php
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>

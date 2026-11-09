@@ -1,0 +1,812 @@
+/*
+  main.js
+  -------------------------------------------------------
+  JavaScript usado em todas as paginas do site.
+  Aqui so tem o que o Bootstrap nao faz sozinho:
+    - mensagens de feedback (toasts)
+    - validacao dos formularios
+    - mascaras de telefone, CNPJ e CEP
+    - integracao com a API externa ViaCEP
+    - filtros das tabelas
+    - pequenas interacoes de cada pagina
+*/
+
+
+/* --- Bloco 1: Funcoes Gerais (Toasts e Carregando) --- */
+function mostrarToast(mensagem, tipo) {
+  if (!tipo) {
+    tipo = 'success';
+  }
+
+  let area = document.getElementById('area-toasts');
+  if (area === null) {
+    area = document.createElement('div');
+    area.id = 'area-toasts';
+    area.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    document.body.appendChild(area);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'toast align-items-center border-0 text-bg-' + tipo;
+  toast.setAttribute('role', 'alert');
+  toast.innerHTML =
+    '<div class="d-flex">' +
+      '<div class="toast-body"></div>' +
+      '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>' +
+    '</div>';
+
+  toast.querySelector('.toast-body').textContent = mensagem;
+
+  area.appendChild(toast);
+  const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+  bsToast.show();
+
+  toast.addEventListener('hidden.bs.toast', function () {
+    toast.remove();
+  });
+}
+
+function simularCarregando(botao, textoCarregando, depois) {
+  if (botao === null || botao === undefined) {
+    depois();
+    return;
+  }
+
+  const textoOriginal = botao.innerHTML;
+  botao.disabled = true;
+  botao.innerHTML = '<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>' + textoCarregando;
+
+  setTimeout(function () {
+    botao.disabled = false;
+    botao.innerHTML = textoOriginal;
+    depois();
+  }, 600);
+}
+
+// Se o PHP mandou uma mensagem na sessao (flash toast), mostra ao abrir a pagina
+const flashServidor = document.getElementById('flash-toast-servidor');
+if (flashServidor !== null) {
+  mostrarToast(
+    flashServidor.getAttribute('data-mensagem'),
+    flashServidor.getAttribute('data-tipo') || 'success'
+  );
+}
+
+
+/* --- Bloco 2: Toasts em botoes e links com data-toast --- */
+const elementosToast = document.querySelectorAll('[data-toast]');
+
+elementosToast.forEach(function (elemento) {
+  elemento.addEventListener('click', function (evento) {
+    evento.preventDefault();
+    const tipo = elemento.getAttribute('data-toast-tipo') || 'primary';
+    mostrarToast(elemento.getAttribute('data-toast'), tipo);
+  });
+});
+
+
+/* --- Bloco 3: Validacao dos Formularios (Bootstrap) & Estados de Carregamento (Item 8) --- */
+const formularios = document.querySelectorAll('form.needs-validation');
+
+function ativarSpinnerNoBotao(botao, textoOpcional) {
+  if (!botao || botao.disabled) return;
+  const spinner = document.createElement('span');
+  spinner.className = 'spinner-border spinner-border-sm me-1';
+  spinner.setAttribute('role', 'status');
+  spinner.setAttribute('aria-hidden', 'true');
+  botao.prepend(spinner);
+  setTimeout(function () {
+    botao.disabled = true;
+  }, 10);
+}
+
+formularios.forEach(function (form) {
+  form.addEventListener('submit', function (evento) {
+    // Se clicou em "Salvar rascunho" (formnovalidate), envia direto para o PHP sem exigir todos os campos
+    if (evento.submitter && evento.submitter.hasAttribute('formnovalidate')) {
+      ativarSpinnerNoBotao(evento.submitter);
+      return;
+    }
+
+    if (!form.checkValidity()) {
+      evento.preventDefault();
+      evento.stopPropagation();
+      form.classList.add('was-validated');
+      mostrarToast('Confira os campos destacados em vermelho.', 'danger');
+      return;
+    }
+
+    // Se o formulario tiver data-backend="true" ou for POST normal para o PHP
+    if (form.getAttribute('data-backend') === 'true' || form.method.toLowerCase() === 'post') {
+      const botao = evento.submitter || form.querySelector('button[type="submit"]');
+      ativarSpinnerNoBotao(botao);
+      return;
+    }
+
+    evento.preventDefault();
+    const botao = evento.submitter;
+    const mensagem = form.getAttribute('data-mensagem') || 'Dados salvos com sucesso!';
+
+    simularCarregando(botao, 'Salvando...', function () {
+      mostrarToast(mensagem, 'success');
+      form.classList.remove('was-validated');
+
+      const modal = form.closest('.modal');
+      if (modal !== null) {
+        bootstrap.Modal.getInstance(modal).hide();
+      }
+    });
+  });
+});
+
+// Listener global para formulários POST normais que não usam needs-validation (Item 8)
+document.addEventListener('submit', function (evento) {
+  const form = evento.target;
+  if (!form || form.classList.contains('needs-validation')) return;
+  if (form.method && form.method.toLowerCase() === 'post') {
+    const botao = evento.submitter || form.querySelector('button[type="submit"]');
+    ativarSpinnerNoBotao(botao);
+  }
+});
+
+
+/* --- Bloco 4: Mascaras de Digitacao nos Formularios (Item 9) --- */
+// Telefone: (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+const camposTelefone = document.querySelectorAll('.mascara-telefone, input[type="tel"]');
+
+camposTelefone.forEach(function (campo) {
+  campo.addEventListener('input', function () {
+    let numeros = campo.value.replace(/\D/g, '').substring(0, 11);
+
+    if (numeros.length > 10) {
+      numeros = '(' + numeros.substring(0, 2) + ') ' + numeros.substring(2, 7) + '-' + numeros.substring(7);
+    } else if (numeros.length > 6) {
+      numeros = '(' + numeros.substring(0, 2) + ') ' + numeros.substring(2, 6) + '-' + numeros.substring(6);
+    } else if (numeros.length > 2) {
+      numeros = '(' + numeros.substring(0, 2) + ') ' + numeros.substring(2);
+    }
+    campo.value = numeros;
+  });
+});
+
+// CNPJ: XX.XXX.XXX/XXXX-XX
+const camposCnpj = document.querySelectorAll('.mascara-cnpj');
+
+camposCnpj.forEach(function (campo) {
+  campo.addEventListener('input', function () {
+    let n = campo.value.replace(/\D/g, '').substring(0, 14);
+
+    if (n.length > 12) {
+      n = n.substring(0, 2) + '.' + n.substring(2, 5) + '.' + n.substring(5, 8) + '/' + n.substring(8, 12) + '-' + n.substring(12);
+    } else if (n.length > 8) {
+      n = n.substring(0, 2) + '.' + n.substring(2, 5) + '.' + n.substring(5, 8) + '/' + n.substring(8);
+    } else if (n.length > 5) {
+      n = n.substring(0, 2) + '.' + n.substring(2, 5) + '.' + n.substring(5);
+    } else if (n.length > 2) {
+      n = n.substring(0, 2) + '.' + n.substring(2);
+    }
+    campo.value = n;
+  });
+});
+
+// CPF: XXX.XXX.XXX-XX
+const camposCpf = document.querySelectorAll('.mascara-cpf');
+
+camposCpf.forEach(function (campo) {
+  campo.addEventListener('input', function () {
+    let n = campo.value.replace(/\D/g, '').substring(0, 11);
+
+    if (n.length > 9) {
+      n = n.substring(0, 3) + '.' + n.substring(3, 6) + '.' + n.substring(6, 9) + '-' + n.substring(9);
+    } else if (n.length > 6) {
+      n = n.substring(0, 3) + '.' + n.substring(3, 6) + '.' + n.substring(6);
+    } else if (n.length > 3) {
+      n = n.substring(0, 3) + '.' + n.substring(3);
+    }
+    campo.value = n;
+  });
+});
+
+// Moeda: R$ 0,00
+const camposMoeda = document.querySelectorAll('.mascara-moeda, .mascara-dinheiro');
+
+camposMoeda.forEach(function (campo) {
+  campo.addEventListener('input', function () {
+    let limpo = campo.value.replace(/\D/g, '');
+    if (limpo === '') {
+      campo.value = '';
+      return;
+    }
+    let valor = (parseInt(limpo, 10) / 100).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+    campo.value = valor;
+  });
+});
+
+// Mascara de CEP (00000-000) + Consulta na API Externa ViaCEP
+const todosCamposCep = document.querySelectorAll('.mascara-cep, #cliente-cep');
+
+todosCamposCep.forEach(function (campoCep) {
+  campoCep.addEventListener('input', function () {
+    let cepLimpo = campoCep.value.replace(/\D/g, '').substring(0, 8);
+    if (cepLimpo.length > 5) {
+      campoCep.value = cepLimpo.substring(0, 5) + '-' + cepLimpo.substring(5);
+    } else {
+      campoCep.value = cepLimpo;
+    }
+
+    // Quando digitar os 8 numeros do CEP, busca o endereco na API ViaCEP
+    if (cepLimpo.length === 8) {
+      fetch('https://viacep.com.br/ws/' + cepLimpo + '/json/')
+        .then(function (resposta) { return resposta.json(); })
+        .then(function (dados) {
+          if (!dados.erro) {
+            const campoEndereco = document.getElementById('cliente-endereco');
+            const campoCidade = document.getElementById('cliente-cidade');
+            const campoUf = document.getElementById('cliente-uf');
+
+            if (campoEndereco !== null) {
+              campoEndereco.value = (dados.logradouro || '') + (dados.bairro ? ' - ' + dados.bairro : '');
+            }
+            if (campoCidade !== null) {
+              campoCidade.value = dados.localidade || '';
+            }
+            if (campoUf !== null) {
+              campoUf.value = dados.uf || '';
+            }
+            mostrarToast('Endereço preenchido pelo CEP (ViaCEP)!', 'primary');
+          } else {
+            mostrarToast('CEP não encontrado na base dos Correios.', 'warning');
+          }
+        })
+        .catch(function () {
+          mostrarToast('Não foi possível consultar o CEP no momento.', 'warning');
+        });
+    }
+  });
+});
+
+
+/* --- Bloco 5: Mostrar / Esconder Senha --- */
+const botoesVerSenha = document.querySelectorAll('.btn-ver-senha');
+
+botoesVerSenha.forEach(function (botao) {
+  botao.addEventListener('click', function () {
+    const campo = document.getElementById(botao.getAttribute('data-alvo'));
+    const icone = botao.querySelector('i');
+
+    if (campo.type === 'password') {
+      campo.type = 'text';
+      icone.className = 'bi bi-eye-slash';
+    } else {
+      campo.type = 'password';
+      icone.className = 'bi bi-eye';
+    }
+  });
+});
+
+
+/* --- Bloco 6: Menu Lateral e Data de Hoje --- */
+const menuLateral = document.getElementById('menu-lateral');
+const botaoRecolher = document.getElementById('btn-recolher-menu');
+const botaoExpandir = document.getElementById('btn-expandir-menu');
+
+if (menuLateral !== null && botaoRecolher !== null && botaoExpandir !== null) {
+  botaoRecolher.addEventListener('click', function () {
+    menuLateral.classList.add('d-lg-none');
+    botaoExpandir.classList.add('d-lg-inline-block');
+  });
+
+  botaoExpandir.addEventListener('click', function () {
+    menuLateral.classList.remove('d-lg-none');
+    botaoExpandir.classList.remove('d-lg-inline-block');
+  });
+}
+
+const elementosData = document.querySelectorAll('.data-hoje');
+const hoje = new Date();
+const opcoesData = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+
+elementosData.forEach(function (elemento) {
+  let texto = hoje.toLocaleDateString('pt-BR', opcoesData);
+  elemento.textContent = texto.charAt(0).toUpperCase() + texto.slice(1);
+});
+
+
+/* --- Bloco 7: Pagina de Login e Criar Conta --- */
+const formLogin = document.getElementById('form-login');
+const formCadastro = document.getElementById('form-cadastro');
+
+if (formCadastro !== null && window.location.hash === '#criar-conta') {
+  const abaCriar = document.getElementById('aba-criar-conta');
+  new bootstrap.Tab(abaCriar).show();
+}
+
+if (formLogin !== null) {
+  formLogin.addEventListener('submit', function (evento) {
+    if (!formLogin.checkValidity()) {
+      evento.preventDefault();
+      evento.stopPropagation();
+      formLogin.classList.add('was-validated');
+      return;
+    }
+
+    if (formLogin.getAttribute('data-backend') === 'true') {
+      return;
+    }
+
+    evento.preventDefault();
+    simularCarregando(evento.submitter, 'Entrando...', function () {
+      window.location.href = 'cliente/inicio';
+    });
+  });
+}
+
+if (formCadastro !== null) {
+  formCadastro.addEventListener('submit', function (evento) {
+    const senha = document.getElementById('cadastro-senha');
+    const confirmar = document.getElementById('cadastro-confirmar');
+
+    if (senha.value !== confirmar.value) {
+      confirmar.setCustomValidity('As senhas não conferem');
+    } else {
+      confirmar.setCustomValidity('');
+    }
+
+    if (!formCadastro.checkValidity()) {
+      evento.preventDefault();
+      evento.stopPropagation();
+      formCadastro.classList.add('was-validated');
+      return;
+    }
+
+    if (formCadastro.getAttribute('data-backend') === 'true') {
+      return;
+    }
+
+    evento.preventDefault();
+    simularCarregando(evento.submitter, 'Criando conta...', function () {
+      mostrarToast('Conta criada! Agora é só entrar.', 'success');
+      formCadastro.reset();
+      formCadastro.classList.remove('was-validated');
+      new bootstrap.Tab(document.getElementById('aba-entrar')).show();
+    });
+  });
+}
+
+
+/* --- Bloco 8: Calculadora de Estimativa de Orcamento (index) --- */
+const selectTipo = document.getElementById('estimativa-tipo');
+const selectPaginas = document.getElementById('estimativa-paginas');
+
+if (selectTipo !== null && selectPaginas !== null) {
+  const valoresTipo = {
+    'landing-page': 2000,
+    'site-institucional': 5000,
+    'loja-virtual': 10000,
+    'sistema-interno': 15000,
+    'app-mobile': 20000
+  };
+
+  const valorPaginaExtra = 300;
+
+  const valoresExtras = {
+    'extra-formulario': 500,
+    'extra-area-cliente': 3000,
+    'extra-integracoes': 2500,
+    'extra-painel': 4000
+  };
+
+  function calcularEstimativa() {
+    const textoValor = document.getElementById('estimativa-valor');
+    const quantidadePaginas = parseInt(selectPaginas.value);
+
+    if (selectTipo.value === '' || isNaN(quantidadePaginas) || quantidadePaginas < 1) {
+      textoValor.textContent = 'R$ ---,--';
+      return;
+    }
+
+    let total = valoresTipo[selectTipo.value];
+
+    if (quantidadePaginas > 5) {
+      total = total + (quantidadePaginas - 5) * valorPaginaExtra;
+    }
+
+    for (const id in valoresExtras) {
+      if (document.getElementById(id).checked) {
+        total = total + valoresExtras[id];
+      }
+    }
+
+    textoValor.textContent = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  selectTipo.addEventListener('change', calcularEstimativa);
+  selectPaginas.addEventListener('input', calcularEstimativa);
+
+  document.querySelectorAll('.estimativa-extra').forEach(function (check) {
+    check.addEventListener('change', calcularEstimativa);
+  });
+}
+
+
+/* --- Bloco 9: Filtro e Busca das Tabelas (clientes e solicitacoes) --- */
+const campoBusca = document.getElementById('busca-tabela');
+const filtroStatus = document.getElementById('filtro-status');
+const filtroTipo = document.getElementById('filtro-tipo');
+const tabelaDados = document.getElementById('tabela-dados');
+
+function filtrarTabela() {
+  const textoBusca = campoBusca.value.toLowerCase().trim();
+  const linhas = tabelaDados.querySelectorAll('tbody tr');
+  let totalVisiveis = 0;
+
+  linhas.forEach(function (linha) {
+    let mostrar = true;
+
+    if (textoBusca !== '' && linha.textContent.toLowerCase().indexOf(textoBusca) === -1) {
+      mostrar = false;
+    }
+
+    if (filtroStatus !== null && filtroStatus.value !== 'todos' && linha.dataset.status !== filtroStatus.value) {
+      mostrar = false;
+    }
+
+    if (filtroTipo !== null && filtroTipo.value !== 'todos' && linha.dataset.tipo !== filtroTipo.value) {
+      mostrar = false;
+    }
+
+    if (mostrar) {
+      linha.classList.remove('d-none');
+      totalVisiveis++;
+    } else {
+      linha.classList.add('d-none');
+    }
+  });
+
+  document.getElementById('total-encontrado').textContent = totalVisiveis;
+  document.getElementById('msg-vazio').classList.toggle('d-none', totalVisiveis > 0);
+}
+
+if (campoBusca !== null && tabelaDados !== null) {
+  campoBusca.addEventListener('input', filtrarTabela);
+
+  if (filtroStatus !== null) {
+    filtroStatus.addEventListener('change', filtrarTabela);
+  }
+  if (filtroTipo !== null) {
+    filtroTipo.addEventListener('change', filtrarTabela);
+  }
+
+  const botaoLimpar = document.getElementById('btn-limpar-filtros');
+  if (botaoLimpar !== null) {
+    botaoLimpar.addEventListener('click', function () {
+      campoBusca.value = '';
+      if (filtroStatus !== null) { filtroStatus.value = 'todos'; }
+      if (filtroTipo !== null) { filtroTipo.value = 'todos'; }
+      filtrarTabela();
+    });
+  }
+}
+
+
+/* --- Bloco 10: CRUD de Clientes (Modais de Criar, Editar e Excluir) --- */
+const modalClienteElemento = document.getElementById('modalCliente');
+const modalExcluirElemento = document.getElementById('modalExcluir');
+let linhaParaExcluir = null;
+
+if (modalClienteElemento !== null) {
+  const formCliente = document.getElementById('form-cliente');
+
+  document.getElementById('btn-novo-cliente').addEventListener('click', function () {
+    formCliente.reset();
+    formCliente.classList.remove('was-validated');
+    document.getElementById('cliente-id').value = '';
+    document.getElementById('modalClienteTitulo').textContent = 'Novo cliente';
+  });
+
+  document.querySelectorAll('.btn-editar').forEach(function (botao) {
+    botao.addEventListener('click', function () {
+      const linha = botao.closest('tr');
+
+      formCliente.classList.remove('was-validated');
+      document.getElementById('modalClienteTitulo').textContent = 'Editar cliente';
+      document.getElementById('cliente-id').value = linha.dataset.id;
+      document.getElementById('cliente-nome').value = linha.dataset.nome;
+      document.getElementById('cliente-cnpj').value = linha.dataset.cnpj;
+      document.getElementById('cliente-segmento').value = linha.dataset.tipo;
+      document.getElementById('cliente-contato').value = linha.dataset.contato;
+      document.getElementById('cliente-email').value = linha.dataset.email;
+      document.getElementById('cliente-telefone').value = linha.dataset.telefone;
+      document.getElementById('cliente-status').value = linha.dataset.status;
+
+      if (document.getElementById('cliente-cep') !== null) {
+        document.getElementById('cliente-cep').value = linha.dataset.cep || '';
+        document.getElementById('cliente-endereco').value = linha.dataset.endereco || '';
+        document.getElementById('cliente-cidade').value = linha.dataset.cidade || '';
+        document.getElementById('cliente-uf').value = linha.dataset.uf || '';
+      }
+    });
+  });
+}
+
+if (modalExcluirElemento !== null) {
+  document.querySelectorAll('.btn-excluir').forEach(function (botao) {
+    botao.addEventListener('click', function () {
+      linhaParaExcluir = botao.closest('tr');
+      document.getElementById('nome-excluir').textContent = linhaParaExcluir.dataset.nome;
+      document.getElementById('id-excluir').value = linhaParaExcluir.dataset.id;
+    });
+  });
+
+  const btnConfirmarExclusao = document.getElementById('btn-confirmar-exclusao');
+  if (btnConfirmarExclusao !== null && btnConfirmarExclusao.type !== 'submit') {
+    btnConfirmarExclusao.addEventListener('click', function () {
+      if (linhaParaExcluir !== null) {
+        const nome = linhaParaExcluir.dataset.nome;
+        linhaParaExcluir.remove();
+        linhaParaExcluir = null;
+        filtrarTabela();
+        mostrarToast('Cliente "' + nome + '" excluído.', 'success');
+      }
+      bootstrap.Modal.getInstance(modalExcluirElemento).hide();
+    });
+  }
+}
+
+
+/* --- Bloco 11: Painel de Solicitacoes e Orcamentos --- */
+const linhasSolicitacao = document.querySelectorAll('.linha-solicitacao');
+
+function selecionarSolicitacao(linha) {
+  linhasSolicitacao.forEach(function (outra) {
+    outra.classList.remove('table-active');
+  });
+  linha.classList.add('table-active');
+
+  document.getElementById('det-nome').textContent = linha.dataset.nome;
+  document.getElementById('det-letra').textContent = linha.dataset.nome.charAt(0);
+  document.getElementById('det-email').textContent = linha.dataset.email;
+  document.getElementById('det-telefone').textContent = linha.dataset.telefone;
+  document.getElementById('det-tipo').textContent = linha.dataset.tipoTexto;
+  document.getElementById('det-faixa').textContent = linha.dataset.faixa;
+  document.getElementById('det-faixa-empresa').textContent = linha.dataset.faixa;
+  document.getElementById('det-mensagem').textContent = linha.dataset.mensagem;
+  document.getElementById('det-recebida').textContent = linha.dataset.data;
+  document.getElementById('det-status').innerHTML = linha.querySelector('.badge').outerHTML;
+
+  if (document.getElementById('det-prazo') !== null) {
+    document.getElementById('det-prazo').textContent = linha.dataset.prazo || '1 a 3 meses';
+  }
+  if (document.getElementById('det-anotacao') !== null) {
+    document.getElementById('det-anotacao').value = linha.dataset.anotacao || '';
+  }
+  if (document.getElementById('det-orcamento-valor') !== null) {
+    document.getElementById('det-orcamento-valor').textContent = linha.dataset.orcamento || 'Ainda não enviado';
+  }
+  if (document.getElementById('det-orcamento-data') !== null) {
+    document.getElementById('det-orcamento-data').textContent = linha.dataset.data || '';
+  }
+  if (document.getElementById('det-objetivo') !== null) {
+    document.getElementById('det-objetivo').textContent = linha.dataset.objetivo || 'Não informado';
+    document.getElementById('det-publico').textContent = linha.dataset.publico || 'Não informado';
+    document.getElementById('det-modulos').textContent = linha.dataset.modulos || 'Não informado';
+    document.getElementById('det-referencias').textContent = linha.dataset.referencias || 'Sem referências informadas';
+  }
+
+  // Atualiza os campos hidden com o ID da solicitacao selecionada para os formularios PHP
+  document.querySelectorAll('.input-solicitacao-id').forEach(function (campoId) {
+    campoId.value = linha.dataset.id || '2';
+  });
+}
+
+linhasSolicitacao.forEach(function (linha) {
+  linha.addEventListener('click', function () {
+    selecionarSolicitacao(linha);
+  });
+});
+
+const marcarTodos = document.getElementById('marcar-todos');
+
+if (marcarTodos !== null) {
+  marcarTodos.addEventListener('change', function () {
+    document.querySelectorAll('.marcar-linha').forEach(function (check) {
+      check.checked = marcarTodos.checked;
+    });
+  });
+}
+
+const botaoConverter = document.getElementById('btn-converter');
+
+if (botaoConverter !== null && botaoConverter.type !== 'submit') {
+  botaoConverter.addEventListener('click', function () {
+    const nome = document.getElementById('det-nome').textContent;
+    simularCarregando(botaoConverter, 'Convertendo...', function () {
+      mostrarToast(nome + ' agora é um cliente!', 'success');
+    });
+  });
+}
+
+const botaoConfirmarRecusa = document.getElementById('btn-confirmar-recusa');
+
+if (botaoConfirmarRecusa !== null && botaoConfirmarRecusa.type !== 'submit') {
+  botaoConfirmarRecusa.addEventListener('click', function () {
+    const nome = document.getElementById('det-nome').textContent;
+    bootstrap.Modal.getInstance(document.getElementById('modalRecusar')).hide();
+    mostrarToast('Solicitação de ' + nome + ' recusada.', 'warning');
+  });
+}
+
+
+/* --- Bloco 12: Questionario da Area do Cliente --- */
+const textoObservacoes = document.getElementById('q-observacoes');
+
+if (textoObservacoes !== null) {
+  textoObservacoes.addEventListener('input', function () {
+    document.getElementById('q-contador').textContent = textoObservacoes.value.length;
+  });
+}
+
+const selectTipoQuestionario = document.getElementById('q-tipo');
+
+if (selectTipoQuestionario !== null) {
+  const faixas = {
+    'landing-page': 'R$ 2.000 – 5.000',
+    'site-institucional': 'R$ 5.000 – 10.000',
+    'loja-virtual': 'R$ 10.000 – 20.000',
+    'sistema-interno': 'R$ 15.000 – 30.000',
+    'app-mobile': 'R$ 20.000 – 40.000'
+  };
+
+  selectTipoQuestionario.addEventListener('change', function () {
+    const faixa = faixas[selectTipoQuestionario.value];
+    document.getElementById('q-faixa').textContent = faixa || 'Escolha o tipo de projeto';
+  });
+}
+
+const modulosQuestionario = document.querySelectorAll('.q-modulo');
+
+function conferirModulos() {
+  const marcados = document.querySelectorAll('.q-modulo:checked').length;
+
+  if (marcados === 0) {
+    modulosQuestionario[0].setCustomValidity('Marque pelo menos um módulo');
+  } else {
+    modulosQuestionario[0].setCustomValidity('');
+  }
+}
+
+if (modulosQuestionario.length > 0) {
+  conferirModulos();
+
+  modulosQuestionario.forEach(function (check) {
+    check.addEventListener('change', conferirModulos);
+  });
+}
+
+
+/* --- Bloco 13: Validacao de Upload de Arquivos no Navegador --- */
+const camposArquivo = document.querySelectorAll('.campo-arquivo');
+
+camposArquivo.forEach(function (campo) {
+  campo.addEventListener('change', function () {
+    const arquivo = campo.files[0];
+
+    if (arquivo === undefined) {
+      return;
+    }
+
+    const extensoesPermitidas = campo.getAttribute('data-extensoes').split(',');
+    const tamanhoMaximoMB = parseInt(campo.getAttribute('data-max-mb'));
+
+    const extensao = arquivo.name.split('.').pop().toLowerCase();
+    const tamanhoMB = arquivo.size / 1024 / 1024;
+    let erro = '';
+
+    if (extensoesPermitidas.indexOf(extensao) === -1) {
+      erro = 'Tipo de arquivo não permitido. Use: ' + extensoesPermitidas.join(', ') + '.';
+    } else if (tamanhoMB > tamanhoMaximoMB) {
+      erro = 'O arquivo tem mais de ' + tamanhoMaximoMB + ' MB.';
+    }
+
+    if (erro !== '') {
+      campo.value = '';
+      mostrarToast(erro, 'danger');
+    }
+  });
+});
+
+/* --- Bloco 14: Filtros da Barra do Topo (Area da Empresa) --- */
+const topoPeriodo = document.querySelector('.filtro-topo-periodo');
+const topoProjeto = document.querySelector('.filtro-topo-projeto');
+
+if (topoPeriodo !== null && document.getElementById('grafico-clientes') === null) {
+  topoPeriodo.addEventListener('change', function () {
+    mostrarToast('Filtro de período aplicado: ' + topoPeriodo.options[topoPeriodo.selectedIndex].text, 'primary');
+  });
+}
+
+if (topoProjeto !== null && document.getElementById('grafico-projetos') === null) {
+  topoProjeto.addEventListener('change', function () {
+    if (filtroStatus !== null) {
+      if (topoProjeto.value === 'andamento') {
+        filtroStatus.value = (filtroStatus.querySelector('option[value="ativo"]') !== null) ? 'ativo' : 'analise';
+      } else if (topoProjeto.value === 'concluidos') {
+        filtroStatus.value = (filtroStatus.querySelector('option[value="inativo"]') !== null) ? 'inativo' : 'aceita';
+      } else {
+        filtroStatus.value = 'todos';
+      }
+      filtrarTabela();
+    } else {
+      mostrarToast('Visualizando: ' + topoProjeto.options[topoProjeto.selectedIndex].text, 'primary');
+    }
+  });
+}
+
+/* --- Bloco 15: Modo Escuro (Dark Mode - Item 10) --- */
+function aplicarTema(tema) {
+  if (tema === 'dark') {
+    document.documentElement.setAttribute('data-bs-theme', 'dark');
+  } else {
+    document.documentElement.setAttribute('data-bs-theme', 'light');
+  }
+  try {
+    localStorage.setItem('iisoul_theme', tema);
+  } catch (e) {}
+
+  document.querySelectorAll('.btn-toggle-theme, #btn-alternar-tema').forEach(function (btn) {
+    const icone = btn.querySelector('i');
+    if (icone) {
+      if (tema === 'dark') {
+        icone.className = 'bi bi-sun-fill text-warning';
+        btn.setAttribute('title', 'Mudar para Modo Claro');
+      } else {
+        icone.className = 'bi bi-moon-stars-fill text-secondary';
+        btn.setAttribute('title', 'Mudar para Modo Escuro');
+      }
+    }
+  });
+}
+
+// Aplica imediatamente ao carregar o script
+(function () {
+  let temaSalvo = 'light';
+  try {
+    temaSalvo = localStorage.getItem('iisoul_theme');
+    if (!temaSalvo && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      temaSalvo = 'dark';
+    }
+  } catch (e) {}
+  aplicarTema(temaSalvo || 'light');
+})();
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.btn-toggle-theme, #btn-alternar-tema').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      const atual = document.documentElement.getAttribute('data-bs-theme') || 'light';
+      const novo = (atual === 'dark') ? 'light' : 'dark';
+      aplicarTema(novo);
+      mostrarToast(novo === 'dark' ? 'Modo Escuro ativado.' : 'Modo Claro ativado.', 'primary');
+    });
+  });
+});
+
+/* --- Bloco 16: Interação de Notificações Persistentes (Item 7) --- */
+document.addEventListener('DOMContentLoaded', function () {
+  // Clique em notificação individual para marcar como lida
+  document.querySelectorAll('.notificacao-item[data-notif-id]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      const id = el.getAttribute('data-notif-id');
+      if (id) {
+        fetch('notificacao-marcar-lida', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'id=' + encodeURIComponent(id)
+        }).catch(function () {});
+      }
+    });
+  });
+});

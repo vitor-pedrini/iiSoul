@@ -1,0 +1,11 @@
+# Ignorar pasta de pacotes do Composer
+/vendor/
+
+# Nunca enviar arquivo .env com senhas reais para o Git
+.env
+
+# Ignorar uploads de usuarios e logs locais
+/storage/uploads/*
+!/storage/uploads/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep

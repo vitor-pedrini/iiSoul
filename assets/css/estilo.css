@@ -1,0 +1,194 @@
+/*
+  estilo.css
+  -------------------------------------------------------
+  Todo o visual do site vem do Bootstrap 5.
+  Este arquivo so serve para trocar as cores padrao do
+  Bootstrap (azul) pela paleta do projeto (azul-petroleo + turquesa).
+
+  Paleta:
+    #12343B -> base escura
+    #0F766E -> primaria
+    #14B8A6 -> secundaria (turquesa)
+    #F6F7F8 -> fundo
+    #E2E8F0 -> bordas
+    #0F172A -> texto principal
+    #64748B -> texto secundario
+*/
+
+/* --- Bloco 1: Variaveis do Bootstrap --- */
+:root {
+  --bs-primary: #0F766E;
+  --bs-primary-rgb: 15, 118, 110;
+  --bs-primary-bg-subtle: #CCFBF1;
+  --bs-primary-border-subtle: #99F6E4;
+  --bs-primary-text-emphasis: #115E59;
+
+  --bs-secondary-rgb: 100, 116, 139;
+  --bs-secondary-color: #64748B;
+
+  --bs-link-color: #0F766E;
+  --bs-link-color-rgb: 15, 118, 110;
+  --bs-link-hover-color: #115E59;
+  --bs-link-hover-color-rgb: 17, 94, 89;
+
+  --bs-body-bg: #FFFFFF;
+  --bs-tertiary-bg: #F6F7F8;
+  --bs-tertiary-bg-rgb: 246, 247, 248;
+  --bs-body-color: #0F172A;
+  --bs-border-color: #E2E8F0;
+}
+
+/* --- Bloco 2: Botoes --- */
+.btn-primary {
+  --bs-btn-bg: #0F766E;
+  --bs-btn-border-color: #0F766E;
+  --bs-btn-hover-bg: #115E59;
+  --bs-btn-hover-border-color: #115E59;
+  --bs-btn-active-bg: #134E4A;
+  --bs-btn-active-border-color: #134E4A;
+  --bs-btn-disabled-bg: #0F766E;
+  --bs-btn-disabled-border-color: #0F766E;
+  --bs-btn-focus-shadow-rgb: 20, 184, 166;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: #0F766E;
+  --bs-btn-border-color: #0F766E;
+  --bs-btn-hover-bg: #0F766E;
+  --bs-btn-hover-border-color: #0F766E;
+  --bs-btn-active-bg: #0F766E;
+  --bs-btn-active-border-color: #0F766E;
+  --bs-btn-disabled-color: #0F766E;
+  --bs-btn-disabled-border-color: #0F766E;
+  --bs-btn-focus-shadow-rgb: 20, 184, 166;
+}
+
+/* --- Bloco 3: Componentes que usam azul fixo --- */
+.form-control:focus,
+.form-select:focus {
+  border-color: #14B8A6;
+  box-shadow: 0 0 0 .25rem rgba(20, 184, 166, .25);
+}
+
+.form-check-input:checked {
+  background-color: #0F766E;
+  border-color: #0F766E;
+}
+
+.nav-pills { --bs-nav-pills-link-active-bg: #0F766E; }
+.progress { --bs-progress-bar-bg: #0F766E; }
+
+.pagination {
+  --bs-pagination-color: #0F766E;
+  --bs-pagination-hover-color: #115E59;
+  --bs-pagination-focus-color: #115E59;
+  --bs-pagination-active-bg: #0F766E;
+  --bs-pagination-active-border-color: #0F766E;
+}
+
+.list-group { --bs-list-group-active-bg: #0F766E; --bs-list-group-active-border-color: #0F766E; }
+
+.accordion {
+  --bs-accordion-active-bg: #CCFBF1;
+  --bs-accordion-active-color: #115E59;
+  --bs-accordion-btn-focus-box-shadow: 0 0 0 .25rem rgba(20, 184, 166, .25);
+}
+
+.nav-underline .nav-link.active {
+  color: #0F766E;
+  border-bottom-color: #0F766E;
+}
+
+/* --- Bloco 4: Menu lateral (area logada) --- */
+.menu-lateral {
+  --bs-offcanvas-width: 260px;
+  width: 260px;
+}
+
+.menu-lateral .nav-link { color: #64748B; display: flex; align-items: center; }
+.menu-lateral .nav-link i { flex-shrink: 0; }
+.menu-lateral .nav-link:hover { color: #0F766E; }
+.menu-lateral .nav-link.active {
+  color: #0F766E;
+  font-weight: 600;
+  background-color: #CCFBF1;
+}
+
+/* --- Bloco 5: Classes utilitarias para zero CSS inline --- */
+.fundo-escuro { background-color: #12343B; }
+.icone-caixa { width: 48px; height: 48px; }
+.avatar { width: 40px; height: 40px; }
+.avatar-grande { width: 80px; height: 80px; }
+.grafico-caixa { position: relative; height: 260px; }
+.tabela-linha { cursor: pointer; }
+.barra-progresso-fina { height: 8px; }
+.barra-progresso-media { height: 10px; }
+.w-0, .progresso-0 { width: 0%; }
+.progresso-20 { width: 20%; }
+.progresso-40 { width: 40%; }
+.progresso-60 { width: 60%; }
+.progresso-80 { width: 80%; }
+.progresso-100 { width: 100%; }
+
+/* --- Bloco 6: Tema Escuro (Dark Mode - Item 10) --- */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #0F172A;
+  --bs-body-color: #F8FAFC;
+  --bs-tertiary-bg: #1E293B;
+  --bs-tertiary-bg-rgb: 30, 41, 59;
+  --bs-border-color: #334155;
+  --bs-primary: #14B8A6;
+  --bs-primary-rgb: 20, 184, 166;
+  --bs-primary-bg-subtle: #134E4A;
+  --bs-primary-border-subtle: #0F766E;
+  --bs-primary-text-emphasis: #5EEAD4;
+}
+
+[data-bs-theme="dark"] .bg-white {
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+  background-color: #0F172A !important;
+  color: #F8FAFC !important;
+}
+
+[data-bs-theme="dark"] .card {
+  background-color: #1E293B;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .list-group-item {
+  background-color: transparent;
+  color: #F8FAFC;
+  border-color: #334155;
+}
+
+[data-bs-theme="dark"] .border,
+[data-bs-theme="dark"] .border-bottom,
+[data-bs-theme="dark"] .border-top,
+[data-bs-theme="dark"] .border-start,
+[data-bs-theme="dark"] .border-end {
+  border-color: #334155 !important;
+}
+
+[data-bs-theme="dark"] .menu-lateral .nav-link {
+  color: #94A3B8;
+}
+
+[data-bs-theme="dark"] .menu-lateral .nav-link.active {
+  background-color: #134E4A;
+  color: #5EEAD4;
+}
+
+[data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(255, 255, 255, 0.03);
+  color: #F8FAFC;
+}
+
+[data-bs-theme="dark"] .table {
+  --bs-table-color: #F8FAFC;
+  --bs-table-bg: transparent;
+  --bs-table-border-color: #334155;
+}
