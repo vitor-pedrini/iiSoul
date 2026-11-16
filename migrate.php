@@ -11,7 +11,7 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-// --- Bloco: Carregar variaveis do arquivo .env ---
+// Carregar variaveis do arquivo .env
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
 
@@ -23,11 +23,11 @@ $senha   = $_ENV['DB_PASS'] ?? '';
 $charset = $_ENV['DB_CHARSET'] ?? 'utf8mb4';
 
 echo "=========================================\n";
-echo " Iniciando Migrations - SuaMarca\n";
+echo " Iniciando Migrations - iiKliente\n";
 echo "=========================================\n";
 
 try {
-    // --- Bloco: Conectar ao MySQL e criar o banco se nao existir ---
+    // Conectar ao MySQL e criar o banco se nao existir
     $pdoSemBanco = new PDO("mysql:host={$host};port={$porta};charset={$charset}", $usuario, $senha, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
@@ -35,7 +35,7 @@ try {
     $pdoSemBanco->exec("CREATE DATABASE IF NOT EXISTS `{$banco}` CHARACTER SET {$charset} COLLATE utf8mb4_unicode_ci;");
     echo "[OK] Banco de dados '{$banco}' verificado.\n";
 
-    // --- Bloco: Conectar ao banco criado e criar tabela de controle de migrations ---
+    // Conectar ao banco criado e criar tabela de controle de migrations
     $pdo = new PDO("mysql:host={$host};port={$porta};dbname={$banco};charset={$charset}", $usuario, $senha, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
@@ -49,14 +49,13 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ");
 
-    // --- Bloco: Ler arquivos .sql da pasta database/migrations ---
+    // Ler arquivos .sql da pasta database/migrations
     $arquivosSql = glob(__DIR__ . '/database/migrations/*.sql');
     sort($arquivosSql);
 
     foreach ($arquivosSql as $caminhoArquivo) {
         $nomeArquivo = basename($caminhoArquivo);
 
-        // Verifica se essa migration ja rodou antes
         $verifica = $pdo->prepare("SELECT id FROM migrations WHERE arquivo = :arquivo");
         $verifica->execute([':arquivo' => $nomeArquivo]);
 
@@ -65,64 +64,24 @@ try {
             continue;
         }
 
-        // Le o conteudo do SQL e executa
         $sql = file_get_contents($caminhoArquivo);
         $pdo->exec($sql);
 
-        // Registra a migration executada
         $registra = $pdo->prepare("INSERT INTO migrations (arquivo) VALUES (:arquivo)");
         $registra->execute([':arquivo' => $nomeArquivo]);
 
         echo "[OK] Migration executada: {$nomeArquivo}\n";
     }
 
-    // --- Bloco: Inserir conta administrativa inicial usando transacao ACID ---
-    $totalUsuarios = (int) $pdo->query("SELECT COUNT(*) FROM usuarios")->fetchColumn();
-
-    if ($totalUsuarios === 0) {
-        echo "Inserindo conta administrativa inicial com transacao ACID...\n";
-
-        $pdo->beginTransaction();
-
-        $senhaHash = password_hash('12345678', PASSWORD_DEFAULT);
-
-        $stmtUsuario = $pdo->prepare("
-            INSERT INTO usuarios (nome, email, senha, perfil, telefone, empresa_nome, cnpj)
-            VALUES (:nome, :email, :senha, :perfil, :telefone, :empresa_nome, :cnpj)
-        ");
-
-        // Conta da Empresa
-        $stmtUsuario->execute([
-            ':nome'         => 'Empresa Exemplo',
-            ':email'        => 'admin@suamarca.com',
-            ':senha'        => $senhaHash,
-            ':perfil'       => 'empresa',
-            ':telefone'     => '(11) 3000-1234',
-            ':empresa_nome' => 'Empresa Exemplo',
-            ':cnpj'         => '98.765.432/0001-10'
-        ]);
-
-        $pdo->commit();
-        echo "[OK] Conta administrativa criada com sucesso!\n";
-        echo "-----------------------------------------\n";
-        echo " Login Empresa: admin@suamarca.com  (Senha: 12345678)\n";
-        echo "-----------------------------------------\n";
-    } else {
-        echo "[PULAR] Banco ja possui usuarios cadastrados.\n";
-    }
-
-    // --- Bloco: Garantir coluna rascunho e limpar dados ficticios do front-end ---
+    // Garantir colunas adicionais essenciais
     $pdo->exec("ALTER TABLE solicitacoes MODIFY COLUMN status ENUM('rascunho', 'nova', 'analise', 'orcamento-enviado', 'aceita', 'recusada') NOT NULL DEFAULT 'nova'");
-    $pdo->exec("DELETE FROM solicitacoes WHERE mensagem LIKE '%rascunho de teste%'");
 
-    // Adiciona coluna link_prototipo em projetos se ainda nao existir
     $colunasProjetos = $pdo->query("SHOW COLUMNS FROM projetos LIKE 'link_prototipo'")->fetchAll();
     if (empty($colunasProjetos)) {
         $pdo->exec("ALTER TABLE projetos ADD COLUMN link_prototipo VARCHAR(255) NULL DEFAULT NULL AFTER ultimo_ajuste");
         echo "[OK] Coluna link_prototipo adicionada em projetos.\n";
     }
 
-    // Adiciona colunas para necessidades dinamicas de cada uma das 5 etapas
     $novasColunasEtapas = [
         'link_homologacao'      => "VARCHAR(255) NULL DEFAULT NULL AFTER link_prototipo",
         'link_producao'         => "VARCHAR(255) NULL DEFAULT NULL AFTER link_homologacao",
@@ -131,6 +90,9 @@ try {
         'checklist_homologacao' => "TEXT NULL DEFAULT NULL AFTER checklist_requisitos",
         'avaliacao_nota'        => "TINYINT NULL DEFAULT NULL AFTER checklist_homologacao",
         'avaliacao_comentario'  => "TEXT NULL DEFAULT NULL AFTER avaliacao_nota",
+        'chave_pix'             => "VARCHAR(150) NULL DEFAULT NULL AFTER avaliacao_comentario",
+        'tipo_chave_pix'        => "VARCHAR(30) NULL DEFAULT 'CNPJ' AFTER chave_pix",
+        'status_financeiro'     => "VARCHAR(30) NOT NULL DEFAULT 'pendente' AFTER tipo_chave_pix",
     ];
     foreach ($novasColunasEtapas as $col => $def) {
         $checkCol = $pdo->query("SHOW COLUMNS FROM projetos LIKE '{$col}'")->fetchAll();
@@ -140,28 +102,13 @@ try {
         }
     }
 
-    // Adiciona coluna categoria em arquivos_projeto se ainda nao existir
     $colunasArquivos = $pdo->query("SHOW COLUMNS FROM arquivos_projeto LIKE 'categoria'")->fetchAll();
     if (empty($colunasArquivos)) {
         $pdo->exec("ALTER TABLE arquivos_projeto ADD COLUMN categoria VARCHAR(60) NOT NULL DEFAULT 'Geral' AFTER tipo_arquivo");
         echo "[OK] Coluna categoria adicionada em arquivos_projeto.\n";
     }
 
-    // --- Bloco: Adicionar colunas financeiras em projetos ---
-    $colunasFin = [
-        'chave_pix'          => "VARCHAR(150) NULL DEFAULT NULL AFTER avaliacao_comentario",
-        'tipo_chave_pix'     => "VARCHAR(30) NULL DEFAULT 'CNPJ' AFTER chave_pix",
-        'status_financeiro'  => "VARCHAR(30) NOT NULL DEFAULT 'pendente' AFTER tipo_chave_pix",
-    ];
-    foreach ($colunasFin as $c => $d) {
-        $checkFin = $pdo->query("SHOW COLUMNS FROM projetos LIKE '{$c}'")->fetchAll();
-        if (empty($checkFin)) {
-            $pdo->exec("ALTER TABLE projetos ADD COLUMN {$c} {$d}");
-            echo "[OK] Coluna {$c} adicionada em projetos.\n";
-        }
-    }
-
-    // --- Bloco: Criar tabela de historico e auditoria do projeto ---
+    // Tabelas complementares com InnoDB
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS historico_projetos (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -177,9 +124,7 @@ try {
             INDEX idx_hist_projeto (projeto_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
-    echo "[OK] Tabela historico_projetos verificada.\n";
 
-    // --- Bloco: Criar tabela de recuperacao de senhas com token ---
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS recuperacao_senhas (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -193,9 +138,7 @@ try {
             INDEX idx_recup_email (email)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
-    echo "[OK] Tabela recuperacao_senhas verificada.\n";
 
-    // --- Bloco: Criar tabela de parcelas e pagamentos do projeto ---
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS projeto_parcelas (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -212,9 +155,7 @@ try {
             INDEX idx_parc_projeto (projeto_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
-    echo "[OK] Tabela projeto_parcelas verificada.\n";
 
-    // --- Bloco: Criar tabela de notificacoes persistentes ---
     $pdo->exec("
         CREATE TABLE IF NOT EXISTS notificacoes (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -228,72 +169,130 @@ try {
             INDEX idx_notif_usuario (usuario_id, lida_em)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     ");
-    echo "[OK] Tabela notificacoes verificada.\n";
 
-    // Corrige caracteres em etapa_atual de projetos para UTF-8 limpo
-    $pdo->exec("UPDATE projetos SET etapa_atual = '2. Wireframes e protótipo' WHERE etapa_atual LIKE '%Wireframe%'");
-    $pdo->exec("UPDATE projetos SET etapa_atual = '4. Testes e validação' WHERE etapa_atual LIKE '%valida%'");
-    $pdo->exec("UPDATE projetos SET etapa_atual = '5. Projeto concluído' WHERE etapa_atual LIKE '%conclu%'");
+    // Seed de Usuarios e Dados de Teste Garantidos
+    $senhaHash = password_hash('12345678', PASSWORD_DEFAULT);
 
-    // Remove registros ficticios de 2025 que vieram do template estatico
-    $pdo->exec("DELETE FROM arquivos_projeto WHERE criado_em < '2026-01-01'");
-    $pdo->exec("DELETE FROM projetos WHERE codigo = '#2025-0152' OR data_inicio < '2026-01-01'");
-    $pdo->exec("DELETE FROM solicitacoes WHERE criado_em < '2026-01-01'");
-    $pdo->exec("DELETE FROM clientes WHERE criado_em < '2026-01-01'");
-    $pdo->exec("DELETE FROM usuarios WHERE email = 'maria@email.com'");
+    // 1. Garante conta da Empresa (admin@iikliente.com)
+    $stmtAdmin = $pdo->prepare("SELECT id FROM usuarios WHERE email = 'admin@iikliente.com'");
+    $stmtAdmin->execute();
+    $adminId = $stmtAdmin->fetchColumn();
 
-    // Sincroniza usuarios reais com perfil 'cliente' para a tabela de clientes
-    $stmtClientesReais = $pdo->query("
-        SELECT u.id, u.nome, u.email, u.telefone, u.empresa_nome, u.cnpj, DATE(u.criado_em) AS data_cadastro
-        FROM usuarios u
-        LEFT JOIN clientes c ON c.usuario_id = u.id
-        WHERE u.perfil = 'cliente' AND c.id IS NULL
-    ");
-    $novosClientes = $stmtClientesReais ? $stmtClientesReais->fetchAll() : [];
-    $stmtInsereCliente = $pdo->prepare("
-        INSERT INTO clientes (usuario_id, nome, cnpj, segmento, contato, cargo, email, telefone, status, criado_em)
-        VALUES (:usuario_id, :nome, :cnpj, 'servicos', :contato, 'Cliente', :email, :telefone, 'ativo', :criado_em)
-    ");
-    foreach ($novosClientes as $nc) {
-        $nomeEmp = trim((string) ($nc['empresa_nome'] ?? '')) !== '' ? $nc['empresa_nome'] : $nc['nome'];
-        $stmtInsereCliente->execute([
-            ':usuario_id' => (int) $nc['id'],
-            ':nome'       => $nomeEmp,
-            ':cnpj'       => $nc['cnpj'] ?: '',
-            ':contato'    => $nc['nome'],
-            ':email'      => $nc['email'],
-            ':telefone'   => $nc['telefone'] ?: 'Não informado',
-            ':criado_em'  => $nc['data_cadastro'] ?: date('Y-m-d'),
+    if (!$adminId) {
+        $stmtInsAdmin = $pdo->prepare("
+            INSERT INTO usuarios (nome, email, senha, perfil, telefone, empresa_nome, cnpj)
+            VALUES (:nome, :email, :senha, 'empresa', :telefone, :empresa_nome, :cnpj)
+        ");
+        $stmtInsAdmin->execute([
+            ':nome'         => 'Empresa Administradora',
+            ':email'        => 'admin@iikliente.com',
+            ':senha'        => $senhaHash,
+            ':telefone'     => '(11) 3000-1234',
+            ':empresa_nome' => 'iiKliente Tecnologia',
+            ':cnpj'         => '98.765.432/0001-10'
         ]);
+        $adminId = $pdo->lastInsertId();
+        echo "[OK] Usuario Administrador criado: admin@iikliente.com\n";
     }
 
-    // Atualiza os arquivos JS minificados (main.min.js e graficos.min.js)
-    foreach (['main', 'graficos'] as $arqJs) {
-        $origem  = __DIR__ . "/assets/js/{$arqJs}.js";
-        $destino = __DIR__ . "/assets/js/{$arqJs}.min.js";
-        if (file_exists($origem)) {
-            $codigo = file_get_contents($origem);
-            $codigo = preg_replace('!/\*.*?\*/!s', '', $codigo);
-            $linhas = explode("\n", $codigo);
-            $limpas = [];
-            foreach ($linhas as $linha) {
-                $linha = trim($linha);
-                if ($linha !== '' && !str_starts_with($linha, '//')) {
-                    $limpas[] = $linha;
-                }
-            }
-            file_put_contents($destino, implode("\n", $limpas));
-            echo "[OK] Arquivo minificado atualizado: assets/js/{$arqJs}.min.js\n";
-        }
+    // 2. Garante conta do Cliente (cliente@iikliente.com)
+    $stmtCli = $pdo->prepare("SELECT id FROM usuarios WHERE email = 'cliente@iikliente.com'");
+    $stmtCli->execute();
+    $clienteUsuarioId = $stmtCli->fetchColumn();
+
+    if (!$clienteUsuarioId) {
+        $stmtInsCli = $pdo->prepare("
+            INSERT INTO usuarios (nome, email, senha, perfil, telefone, empresa_nome, cnpj)
+            VALUES (:nome, :email, :senha, 'cliente', :telefone, :empresa_nome, :cnpj)
+        ");
+        $stmtInsCli->execute([
+            ':nome'         => 'Maria Silva',
+            ':email'        => 'cliente@iikliente.com',
+            ':senha'        => $senhaHash,
+            ':telefone'     => '(11) 98765-4321',
+            ':empresa_nome' => 'Cafeteria Aroma & Sabor',
+            ':cnpj'         => '12.345.678/0001-90'
+        ]);
+        $clienteUsuarioId = $pdo->lastInsertId();
+        echo "[OK] Usuario Cliente criado: cliente@iikliente.com\n";
     }
 
-    echo "Migrations finalizadas com sucesso!\n";
+    // 3. Garante registro de Cliente na tabela clientes
+    $stmtRegCli = $pdo->prepare("SELECT id FROM clientes WHERE usuario_id = :uid OR email = 'cliente@iikliente.com'");
+    $stmtRegCli->execute([':uid' => $clienteUsuarioId]);
+    $clienteId = $stmtRegCli->fetchColumn();
+
+    if (!$clienteId) {
+        $stmtInsRegCli = $pdo->prepare("
+            INSERT INTO clientes (usuario_id, nome, cnpj, segmento, contato, cargo, email, telefone, cep, endereco, cidade, uf, status, criado_em)
+            VALUES (:usuario_id, :nome, :cnpj, 'comercio', :contato, 'Proprietaria', :email, :telefone, '01001-000', 'Praca da Se, 100', 'Sao Paulo', 'SP', 'ativo', CURRENT_DATE)
+        ");
+        $stmtInsRegCli->execute([
+            ':usuario_id' => $clienteUsuarioId,
+            ':nome'       => 'Cafeteria Aroma & Sabor',
+            ':cnpj'       => '12.345.678/0001-90',
+            ':contato'    => 'Maria Silva',
+            ':email'      => 'cliente@iikliente.com',
+            ':telefone'   => '(11) 98765-4321',
+        ]);
+        $clienteId = $pdo->lastInsertId();
+        echo "[OK] Registro de cliente criado na tabela clientes.\n";
+    }
+
+    // 4. Garante Projeto Ativo com 5 Etapas e Dados para Teste
+    $stmtProj = $pdo->prepare("SELECT id FROM projetos WHERE cliente_id = :cid");
+    $stmtProj->execute([':cid' => $clienteId]);
+    $projetoId = $stmtProj->fetchColumn();
+
+    if (!$projetoId) {
+        $stmtInsProj = $pdo->prepare("
+            INSERT INTO projetos (cliente_id, codigo, nome, tipo, descricao, etapa_atual, progresso, status, valor_orcamento, data_inicio, prazo_entrega, link_prototipo, chave_pix, tipo_chave_pix, status_financeiro)
+            VALUES (:cliente_id, '#2026-001', :nome, 'Website e Catalogo Digital', :descricao, '2. Wireframes e prototipo', 40, 'desenvolvimento', 8500.00, CURRENT_DATE, DATE_ADD(CURRENT_DATE, INTERVAL 45 DAY), 'https://www.figma.com', '12.345.678/0001-90', 'CNPJ', 'pendente')
+        ");
+        $stmtInsProj->execute([
+            ':cliente_id' => $clienteId,
+            ':nome'       => 'Portal Web Cafeteria Aroma',
+            ':descricao'  => 'Desenvolvimento de plataforma responsiva completa com cardapio digital e integracao de pedidos.',
+        ]);
+        $projetoId = $pdo->lastInsertId();
+        echo "[OK] Projeto de demonstracao criado: #2026-001\n";
+
+        // Cria parcelas financeiras
+        $pdo->exec("
+            INSERT INTO projeto_parcelas (projeto_id, numero_parcela, descricao, valor, data_vencimento, status)
+            VALUES 
+            ({$projetoId}, 1, 'Entrada / Aprovacao do Briefing', 4250.00, CURRENT_DATE, 'pago'),
+            ({$projetoId}, 2, 'Entrega Final e Homologacao', 4250.00, DATE_ADD(CURRENT_DATE, INTERVAL 30 DAY), 'pendente')
+        ");
+
+        // Cria historico inicial de auditoria
+        $pdo->exec("
+            INSERT INTO historico_projetos (projeto_id, usuario_id, perfil, autor_nome, acao, descricao, etapa_de, etapa_para)
+            VALUES 
+            ({$projetoId}, {$adminId}, 'empresa', 'Vitor Hugo Pedrini', 'criacao_projeto', 'Projeto criado e iniciado com sucesso.', NULL, '1. Briefing e Requisitos'),
+            ({$projetoId}, {$adminId}, 'empresa', 'Vitor Hugo Pedrini', 'avanco_etapa', 'Briefing concluido e aprovado. Iniciado wireframe interativo.', '1. Briefing e Requisitos', '2. Wireframes e prototipo')
+        ");
+
+        // Cria notificacao de boas-vindas
+        $pdo->exec("
+            INSERT INTO notificacoes (usuario_id, icone, titulo, mensagem, link)
+            VALUES 
+            ({$clienteUsuarioId}, 'bi-stars', 'Bem-vindo ao iiKliente!', 'Seu projeto #2026-001 esta disponivel para acompanhamento.', '/cliente/projeto')
+        ");
+        echo "[OK] Parcelas financeiras, historico e notificacao inicial criados.\n";
+    }
+
+    echo "=========================================\n";
+    echo " Migrations Concluidas com Sucesso!\n";
+    echo "-----------------------------------------\n";
+    echo " Admin / Empresa : admin@iikliente.com   (Senha: 12345678)\n";
+    echo " Cliente Teste   : cliente@iikliente.com (Senha: 12345678)\n";
+    echo "=========================================\n";
 
 } catch (Throwable $erro) {
-    // Se der qualquer erro durante a transacao, desfaz tudo (Rollback ACID)
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
-        echo "[ERRO] Transacao desfeita (Rollback executado).\n";
+        echo "[ERRO] Transacao desfeita.\n";
     }
     echo "[ERRO] Falha na migration: " . $erro->getMessage() . "\n";
     exit(1);

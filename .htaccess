@@ -1,14 +1,45 @@
 # =========================================================
-# .htaccess - Roteamento Front-Controller (MVC)
+# .htaccess - Roteamento Front-Controller (MVC) e Seguranca
 # =========================================================
+
+# --- 1. Protecao de Headers HTTP (Seguranca) ---
+<IfModule mod_headers.c>
+    # Evita que o site seja renderizado dentro de iframes externos (Clickjacking)
+    Header set X-Frame-Options "SAMEORIGIN"
+    # Impede que navegadores tentem adivinhar o tipo MIME (MIME-Sniffing)
+    Header set X-Content-Type-Options "nosniff"
+    # Ativa protecao XSS nativa dos navegadores legados
+    Header set X-XSS-Protection "1; mode=block"
+    # Politica de Referrer restrita
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# --- 2. Bloqueio de Acesso a Pastas e Arquivos Sensiveis ---
+# Impede listagem de diretorios
+Options -Indexes
+
+# Bloqueia acesso direto a arquivos de configuracao, logs e banco
+<FilesMatch "^(\.env|\.env\.example|\.gitignore|composer\.(json|lock)|migrate\.php)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Se for uma pasta ou arquivo estatico real de CSS, JS, imagem ou fonte, entrega direto
-    RewriteCond %{REQUEST_URI} ^.*/(assets|storage)/ [NC]
+    # Bloqueia acesso direto as pastas do sistema (app, database, storage/logs)
+    RewriteRule ^(app|database|storage/logs)/ - [F,L,NC]
+
+    # Se for uma pasta ou arquivo estatico real de CSS, JS, imagem publica, entrega direto
+    RewriteCond %{REQUEST_URI} ^.*/(assets|storage/uploads)/ [NC]
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
 
-    # Todas as outras rotas (.html, .php ou URLs amigaveis) passam pelo index.php
+    # Todas as outras rotas passam pelo index.php
     RewriteRule ^ index.php [QSA,L]
 </IfModule>

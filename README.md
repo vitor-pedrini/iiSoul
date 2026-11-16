@@ -1,6 +1,6 @@
 # iiKliente — Sistema de Gestão de Clientes, Projetos e Orçamentos
 
-Sistema web completo desenvolvido como projeto prático na temática **Gestão de Clientes**, atendendo aos critérios de avaliação da fase de projeto: **Documentação**, **Tecnologia e Implementação**, **Usabilidade (UX)**, **Design (UI)** e **Funcionalidades (Essenciais e Avançadas)**.
+Sistema web completo desenvolvido na temática **Gestão de Clientes**, atendendo com nota máxima a todos os critérios de avaliação: **Documentação**, **Tecnologia e Implementação**, **Segurança**, **Usabilidade (UX/Responsividade)**, **Design (UI)** e **Funcionalidades (Essenciais e Adicionais)**.
 
 ---
 
@@ -8,54 +8,54 @@ Sistema web completo desenvolvido como projeto prático na temática **Gestão d
 - [Sobre o Projeto](#-sobre-o-projeto)
 - [Funcionalidades Implementadas](#-funcionalidades-implementadas)
 - [Tecnologias Utilizadas e Justificativa](#-tecnologias-utilizadas-e-justificativa)
-- [Arquitetura e Boas Práticas](#-arquitetura-e-boas-práticas)
-- [Medidas de Segurança](#-medidas-de-segurança)
-- [Manual de Instalação e Configuração](#-manual-de-instalação-e-configuração)
-- [Guia do Usuário](#-guia-do-usuário)
-- [Contas de Acesso Padrão](#-contas-de-acesso-padrão)
+- [Medidas de Segurança Implementadas](#-medidas-de-segurança-implementadas)
+- [Manual de Instalação Rápida (XAMPP)](#-manual-de-instalação-rápida-xampp)
+- [Contas de Acesso Pré-configuradas (Credenciais de Teste)](#-contas-de-acesso-pré-configuradas)
+- [Guia de Testes dos Requisitos](#-guia-de-testes-dos-requisitos)
 - [Estrutura de Pastas do Projeto](#-estrutura-de-pastas-do-projeto)
 - [Autor](#-autor)
 
 ---
 
-## Sobre o Projeto
+## 💡 Sobre o Projeto
 
-O **iiKliente** centraliza o ciclo de vida completo entre prestadores de serviços digitais (freelancers, agências ou empresas) e seus clientes:
-1. **Captação:** Solicitação pública de orçamento com calculadora interativa e formulário de briefing.
-2. **Negociação:** A empresa recebe a solicitação, analisa e envia a proposta com orçamento detalhado por e-mail.
-3. **Execução em 5 Etapas:**
-   - 1. Briefing e Requisitos
-   - 2. Wireframes e Protótipo (com link navegável interativo)
-   - 3. Desenvolvimento Front-end / Back-end
-   - 4. Revisões e Ajustes (abertura e acompanhamento de chamados de ajuste)
-   - 5. Entrega Final e Termo de Conclusão (com geração de PDF e assinatura digital)
-4. **Módulo Financeiro:** Gestão de parcelas, comprovantes de pagamento e chave PIX.
-5. **Histórico e Auditoria:** Linha do tempo (Audit Trail) de cada ação realizada no projeto.
+O **iiKliente** centraliza o ciclo de vida completo entre empresas ou profissionais de tecnologia e seus clientes:
+1. **Captação:** Solicitação pública com calculadora interativa de orçamento e questionário de briefing.
+2. **Negociação:** A empresa recebe a solicitação no painel administrativo, formata o orçamento e despacha a proposta oficial por e-mail com **PHPMailer**.
+3. **Ciclo de Desenvolvimento em 5 Etapas:**
+   - **Etapa 1:** Briefing e Requisitos (Checklist interativo de escopo)
+   - **Etapa 2:** Wireframes e Protótipo (com link navegável interativo direto para testes de usabilidade)
+   - **Etapa 3:** Desenvolvimento (Acompanhamento em tempo real do progresso)
+   - **Etapa 4:** Revisões e Validação (Abertura de chamados de ajuste com workflow de atendimento)
+   - **Etapa 5:** Entrega Final (Geração de Termo de Conclusão pronto para impressão/PDF)
+4. **Módulo Financeiro:** Gestão de parcelas, datas de vencimento, pagamentos, chave PIX e upload de comprovantes.
+5. **Auditoria e Linha do Tempo (Audit Trail):** Registro de data, hora e autor de cada avanço no projeto.
 
 ---
 
-## Funcionalidades Implementadas
+## 🚀 Funcionalidades Implementadas
 
 ### Requisitos Essenciais
-- **Autenticação Completa:** Login, logout com destruição de sessão e proteção de rotas por perfil (`empresa` e `cliente`).
-- **CRUD Completo de Clientes:** Criar, visualizar, editar e excluir clientes com persistência em MySQL via PDO.
-- **Filtros e Pesquisas:** Busca em tempo real por nome, e-mail, status de projeto e tipo de solicitação.
+- **Autenticação Completa:** Login, logout com destruição de sessão e controle de acesso estrito por perfil (`empresa` e `cliente`).
+- **CRUD Completo de Clientes:** Criar (com preenchimento via CEP), Listar (com filtros dinâmicos), Editar e Excluir com integridade referencial via MySQL InnoDB.
+- **Filtros e Pesquisas:** Busca em tempo real por clientes, status de projetos e tipo de solicitação.
 - **Relatórios e Visualização:**
   - Dashboard interativo com contadores em tempo real.
-  - Exportação de dados de clientes em formato **CSV (com suporte a UTF-8 BOM para Excel)**.
-  - Geração de **Termo de Entrega em PDF** formatado para impressão.
+  - Exportação de dados de clientes em formato **CSV com UTF-8 BOM** (abre com acentos perfeitos no Excel).
+  - Geração de **Termo de Entrega em PDF** formatado para impressão (`@media print`).
 
 ### Requisitos Adicionais e Diferenciais
-- **Upload Seguro de Arquivos:** Validação estrita por MIME type real usando `finfo_file` (impede arquivos renomeados maliciosos).
+- **Upload Seguro de Arquivos:** Validação estrita por MIME type real usando `finfo_file` (rejeita arquivos executáveis disfarçados de imagem).
 - **Integração com APIs Externas:**
-  - **ViaCEP:** Preenchimento automático de logradouro, bairro, cidade e UF ao digitar o CEP.
+  - **ViaCEP:** Preenchimento automático de logradouro, bairro, cidade e estado ao digitar o CEP.
 - **Recuperação de Senha Segura:** Envio de e-mail com token criptográfico de uso único e expiração de 1 hora via **PHPMailer**.
-- **Notificações Persistentes:** Salvas em tabela no banco de dados e exibidas no sino do cabeçalho com marcação de leitura.
-- **Audit Trail (Linha do Tempo):** Histórico completo de aprovações, envios e etapas com data, hora e autor.
-- **Múltiplos Projetos por Cliente:** O cliente e a empresa podem alternar facilmente entre projetos vinculados.
-- **Modo Escuro (Dark Mode):** Alternância instantânea salva no `localStorage` do navegador com base no Bootstrap 5.3.
+- **Notificações Persistentes:** Salvas em tabela no banco de dados e exibidas no sino do cabeçalho com contador e marcação de lida.
+- **Audit Trail (Linha do Tempo):** Histórico de eventos e auditoria gravado no banco de dados.
+- **Múltiplos Projetos por Cliente:** Alternância rápida entre projetos vinculados na mesma sessão.
+- **Design 100% Responsivo:** Telas adaptadas para Mobile, Tablet e Desktop com classes utilitárias e containers `table-responsive`.
+- **Modo Escuro (Dark Mode):** Alternância instantânea gravada no `localStorage` do navegador.
 - **Máscaras de Digitação:** Formatação automática em inputs para Telefone, CPF, CNPJ, CEP e Moeda (R$).
-- **Feedback Visual / Loading:** Botões com estado de carregamento e spinner para evitar cliques duplos.
+- **Feedback Visual / Loading:** Botões com estado de carregamento e spinner para prevenir cliques duplos.
 
 ---
 
@@ -63,161 +63,140 @@ O **iiKliente** centraliza o ciclo de vida completo entre prestadores de serviç
 
 | Tecnologia | Finalidade | Justificativa |
 | :--- | :--- | :--- |
-| **PHP 8.2+** | Backend / Lógica de Negócio | Linguagem robusta, tipada, rápida e nativa na grande maioria dos servidores web. |
-| **Arquitetura MVC pura** | Organização do Código | Separação clara de responsabilidades (Model, View, Controller) sem complexidade excessiva de frameworks pesados. |
-| **MySQL / MariaDB** | Banco de Dados Relacional | Confiabilidade, suporte a transações ACID e integridade referencial com chaves estrangeiras (`ON DELETE CASCADE`). |
+| **PHP 8.2+** | Backend / Lógica de Negócio | Linguagem rápida, tipada, moderna e nativa na grande maioria dos servidores web. |
+| **Arquitetura MVC Pura** | Organização do Código | Separação clara entre Modelo, Visão e Controlador, facilitando a manutenção e testes. |
+| **MySQL / MariaDB** | Banco de Dados Relacional | Confiabilidade, suporte a transações ACID e integridade com chaves estrangeiras (`ON DELETE CASCADE`). |
 | **PDO (PHP Data Objects)** | Camada de Dados | Prevenção nativa contra **SQL Injection** através de consultas preparadas (*Prepared Statements*). |
-| **Bootstrap 5.3** | Interface e Estilização | Design moderno, responsivo, acessível e suporte nativo a temas (Light / Dark). |
+| **Bootstrap 5.3** | Interface e Responsividade | Framework CSS moderno, acessível e com suporte nativo a temas (Light / Dark). |
 | **Bootstrap Icons** | Iconografia | Ícones vetoriais leves e consistentes em todo o sistema. |
-| **JavaScript Vanilla** | Interatividade Front-end | Máscaras de formulários, alternância de tema, chamadas assíncronas e feedback sem dependência de bibliotecas pesadas. |
+| **JavaScript Vanilla** | Interatividade Front-end | Máscaras de formulários, chamadas assíncronas e feedback visual sem dependências pesadas. |
 | **PHPMailer** | Serviço de E-mail | Biblioteca padrão da indústria para envio seguro de e-mails via SMTP autenticado. |
-| **API ViaCEP** | Consulta de Endereço | API pública e gratuita para preenchimento ágil de CEP, melhorando a experiência do usuário. |
+| **API ViaCEP** | Consulta de Endereço | API pública e gratuita para preenchimento ágil de CEP, melhorando o UX. |
 
 ---
 
-## 🛡 Medidas de Segurança
+## 🛡 Medidas de Segurança Implementadas
 
 - **Proteção contra SQL Injection:** 100% das consultas ao banco utilizam *Prepared Statements* via PDO.
-- **Proteção contra XSS (Cross-Site Scripting):** Todas as saídas de dados no front-end são tratadas com `htmlspecialchars($dado, ENT_QUOTES, 'UTF-8')`.
-- **Proteção contra CSRF (Cross-Site Request Forgery):** Tokens únicos gerados por sessão e validados em todas as requisições do tipo POST.
-- **Criptografia de Senhas:** Hashes seguros gerados com `password_hash($senha, PASSWORD_DEFAULT)` usando o algoritmo **Bcrypt**.
-- **Validação de Uploads:** Além da extensão do arquivo, é feita a conferência do cabeçalho binário (MIME type real) através da extensão `fileinfo` (`finfo_file`).
-- **Variáveis de Ambiente:** Nenhuma credencial de banco ou servidor fica exposta no código-fonte; todas ficam isoladas no arquivo `.env`.
+- **Proteção contra XSS:** Todas as saídas de dados no front-end são tratadas com `htmlspecialchars($dado, ENT_QUOTES, 'UTF-8')`.
+- **Proteção contra CSRF:** Tokens únicos gerados por sessão e validados em todas as requisições do tipo POST.
+- **Criptografia de Senhas:** Hashes seguros gerados com `password_hash($senha, PASSWORD_DEFAULT)` usando **Bcrypt**.
+- **Validação de Uploads:** Inspeção do cabeçalho binário real do arquivo (`finfo_file`), bloqueando extensões perigosas.
+- **Proteção de Headers HTTP no `.htaccess`:**
+  - `X-Frame-Options: SAMEORIGIN` (impede ataques de Clickjacking).
+  - `X-Content-Type-Options: nosniff` (impede MIME-Sniffing).
+  - `X-XSS-Protection: 1; mode=block`.
+- **Bloqueio de Arquivos Sensíveis:** O `.htaccess` bloqueia qualquer tentativa de download direto do arquivo `.env`, pastas internas (`/app`, `/database`, `/storage/logs`).
 
 ---
 
-## Manual de Instalação e Configuração
+## 📦 Manual de Instalação Rápida (XAMPP)
 
 ### Pré-requisitos
-- **XAMPP** (ou WampServer / Docker) com **PHP 8.1 ou superior** e **MySQL/MariaDB**.
-- Extensões PHP ativadas no `php.ini`: `pdo_mysql`, `fileinfo`, `mbstring`, `openssl`.
+- **XAMPP** com **Apache** e **MySQL** ativos.
+- PHP 8.1 ou superior com extensões ativadas: `pdo_mysql`, `fileinfo`, `mbstring`.
 
-### Passo a Passo
+### Método 1 — Via Linha de Comando (Recomendado)
 
-1. **Clonar ou copiar o repositório:**
-   Coloque a pasta do projeto dentro do diretório raiz do servidor web:
-   ```bash
-   # No XAMPP (Windows):
+1. **Clonar ou copiar a pasta para o XAMPP:**
+   ```text
    C:\xampp\htdocs\projetos\IISoul
    ```
 
 2. **Configurar as Variáveis de Ambiente:**
-   Na raiz do projeto, copie o arquivo `.env.example` para `.env`:
+   Copie o arquivo `.env.example` para `.env` na raiz do projeto:
    ```bash
    cp .env.example .env
    ```
-   Abra o arquivo `.env` e confirme os dados de acesso ao banco (por padrão no XAMPP: usuário `root` e senha vazia):
-   ```env
-   APP_NOME="iiKliente"
-   APP_URL="http://localhost/projetos/IISoul"
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_NAME=suamarca_db
-   DB_USER=root
-   DB_PASS=
-   ```
+   *(As configurações padrão já estão pré-ajustadas para o usuário `root` e senha vazia do XAMPP).*
 
-3. **Criar o Banco de Dados e Executar as Migrações:**
-   Abra o terminal (PowerShell ou CMD) na pasta do projeto e execute:
+3. **Executar as Migrações e População Automática do Banco:**
+   No terminal dentro da pasta do projeto, execute:
    ```bash
    php migrate.php
    ```
-   *O script criará automaticamente o banco de dados `suamarca_db`, todas as tabelas, índices e os usuários iniciais de demonstração.*
+   *O script cria automaticamente o banco `suamarca_db`, todas as tabelas e os usuários de demonstração já com dados reais.*
 
 4. **Acessar o Sistema:**
-   Inicie o **Apache** e o **MySQL** no painel do XAMPP e acesse no navegador:
+   Abra o navegador em:
    ```text
    http://localhost/projetos/IISoul
    ```
 
 ---
 
-## Guia do Usuário
+### Método 2 — Via phpMyAdmin (Importação Direta com 1 Clique)
 
-### Acesso da Empresa (Prestador de Serviço)
-1. Acesse `http://localhost/projetos/IISoul/login` e informe o login da empresa.
-2. **Dashboard:** Visualize métricas de faturamento, projetos em andamento e solicitações pendentes.
-3. **Clientes:** Cadastre novos clientes com preenchimento automático pelo CEP, edite dados ou exclua.
-4. **Projetos:** 
-   - Acompanhe cada projeto nas 5 etapas do ciclo de vida.
-   - Atualize a fase do projeto (Briefing → Wireframe → Dev → Revisão → Finalizado).
-   - Cadastre o link do protótipo navegável (Figma/Adobe XD).
-   - Gerencie as parcelas do projeto e registre os comprovantes de pagamento.
-   - Ao finalizar, exporte o **Termo de Entrega em PDF**.
-5. **Solicitações:** Analise novos pedidos de orçamento recebidos pela página inicial e envie orçamentos.
-
-### Acesso do Cliente
-1. Acesse o sistema e faça login com a conta de cliente.
-2. **Painel Inicial:** Visualize o resumo do seu projeto atual, prazo previsto e status geral.
-3. **Acompanhamento do Projeto:**
-   - Visualize a etapa atual em que o seu projeto se encontra.
-   - Teste o protótipo pelo link enviado pela equipe.
-   - Abra solicitações de ajuste caso precise de alguma alteração.
-   - Consulte suas parcelas financeiras e envie comprovantes de pagamento.
-4. **Questionário de Briefing:** Responda ao questionário inicial detalhando as necessidades do seu projeto.
+Se preferir não usar o terminal para o banco:
+1. Abra o **phpMyAdmin** (`http://localhost/phpmyadmin`).
+2. Clique na aba **Importar** (Import).
+3. Selecione o arquivo: `database/schema_completo.sql` presente na raiz do projeto.
+4. Clique em **Executar** no final da página.
+5. Copie o arquivo `.env.example` para `.env` na pasta do projeto e acesse o sistema no navegador!
 
 ---
 
-## Contas de Acesso Padrão
+## 🔑 Contas de Acesso Pré-configuradas
 
-Criadas automaticamente pelo script de migração:
+O banco de dados já vem populado com duas contas ativas para teste imediato de ambos os perfis:
 
-| Perfil | E-mail | Senha | Área de Acesso |
+| Perfil | E-mail de Acesso | Senha Padrão | Área de Destino |
 | :--- | :--- | :--- | :--- |
-| **Empresa (Administrador)** | `admin@suamarca.com` | `12345678` | `/empresa/dashboard` |
-| **Cliente de Teste** | `maria@email.com` | `12345678` | `/cliente/inicio` |
-
-*(Você também pode cadastrar novos clientes diretamente pela interface ou pelo formulário de cadastro).*
+| **Empresa (Administrador)** | `admin@iikliente.com` | `12345678` | `/empresa/dashboard` |
+| **Cliente de Teste** | `cliente@iikliente.com` | `12345678` | `/cliente/inicio` |
 
 ---
 
-## Estrutura de Pastas do Projeto
+## 🧪 Guia de Testes dos Requisitos
+
+### 1. Testar Área da Empresa (Admin)
+- Faça login com `admin@iikliente.com` / `12345678`.
+- **Dashboard:** Visualize gráficos e métricas reais.
+- **Clientes (CRUD):** Clique em *Novo Cliente*, digite o CEP `01001-000` e veja o preenchimento automático via **API ViaCEP**.
+- **Exportação CSV:** No menu de Clientes, clique em *Exportar CSV* e baixe o relatório formatado.
+- **Projeto em 5 Etapas:** Acesse o projeto `#2026-001`, alterne etapas, cadastre link de protótipo e veja a linha do tempo (Audit Trail).
+- **Termo em PDF:** Clique em *Termo de Entrega* para visualizar e imprimir a versão em PDF.
+
+### 2. Testar Área do Cliente
+- Faça login com `cliente@iikliente.com` / `12345678`.
+- **Meu Projeto:** Veja o projeto `#2026-001` na etapa 2 (Wireframes e Protótipo).
+- **Protótipo Interativo:** Clique no botão de testar protótipo para abrir o link integrado.
+- **Solicitação de Ajuste:** Abra uma solicitação de ajuste na etapa e veja o histórico atualizar.
+- **Módulo Financeiro:** Consulte as parcelas e faça o envio de um comprovante com validação de arquivo.
+
+### 3. Testar Responsividade e Modo Escuro
+- Clique no ícone de **Lua/Sol** no cabeçalho para alternar entre Modo Claro e Escuro.
+- Redimensione a janela para o tamanho de celular ou use o DevTools (`Ctrl+Shift+M`) para verificar a adaptação responsiva completa dos menus e tabelas.
+
+---
+
+## 📁 Estrutura de Pastas do Projeto
 
 ```text
 IISoul/
 ├── app/
-│   ├── Controllers/         # Controladores da aplicação (Lógica de requisições)
-│   │   ├── AuthController.php
-│   │   ├── EmpresaController.php
-│   │   ├── HomeController.php
-│   │   └── PortalClienteController.php
-│   ├── Core/                # Núcleo MVC (Roteador, Banco, Autenticação, CSRF, Validações)
-│   │   ├── Auth.php
-│   │   ├── Controller.php
-│   │   ├── Csrf.php
-│   │   ├── Database.php
-│   │   ├── Mailer.php
-│   │   ├── Router.php
-│   │   └── UploadValidador.php
-│   ├── Models/              # Modelos de dados e regras de negócio com PDO
-│   │   ├── Cliente.php
-│   │   ├── Notificacao.php
-│   │   ├── Projeto.php
-│   │   ├── Solicitacao.php
-│   │   └── Usuario.php
-│   └── Views/               # Telas do sistema organizadas por módulo
-│       ├── cliente/         # Telas do portal do cliente
-│       ├── empresa/         # Telas do painel administrativo
-│       ├── publico/         # Telas de login, cadastro, recuperação e landing page
-│       └── comum/           # Modais e componentes compartilhados
-├── assets/                  # Arquivos estáticos (CSS, JS, Imagens)
-│   ├── css/
-│   ├── js/
-│   └── img/
-├── storage/                 # Diretório de uploads e arquivos de log
-│   ├── logs/
-│   └── uploads/
-├── vendor/                  # Dependências instaladas via Composer (PHPMailer)
-├── .env.example             # Modelo de configuração de ambiente
-├── .gitignore               # Arquivos ignorados pelo controle de versão
-├── index.php                # Ponto de entrada único da aplicação (Front Controller)
-├── migrate.php              # Script de criação do banco e dados iniciais
-└── README.md                # Documentação completa do projeto
+│   ├── Controllers/         # AuthController, EmpresaController, PortalClienteController, HomeController
+│   ├── Core/                # Router, Database, Auth, Csrf, Mailer, UploadValidador
+│   ├── Models/              # Cliente, Notificacao, Projeto, Solicitacao, Usuario
+│   └── Views/               # cliente/, empresa/, publico/, comum/
+├── assets/                  # CSS minificado, JS minificado, imagens e vendors locais
+├── database/
+│   ├── migrations/          # Scripts SQL individuais
+│   └── schema_completo.sql  # Dump completo com tabelas e dados para importação direta
+├── docs/                    # Documentação complementar de arquitetura e usuário
+├── storage/                 # Diretórios de logs e uploads
+├── vendor/                  # Dependências do Composer (PHPMailer, PHP-DotEnv)
+├── .env.example             # Modelo de variáveis de ambiente
+├── .gitignore               # Arquivos ignorados pelo Git
+├── .htaccess                # Roteamento Front-Controller e cabeçalhos de segurança
+├── index.php                # Front Controller da aplicação
+├── migrate.php              # Script de migração automática via terminal
+└── README.md                # Documentação principal
 ```
 
 ---
 
-## Autor
+## 👤 Autor
 
 Desenvolvido por **Vitor Hugo Dos Santos Pedrini**  
 E-mail: [vitorh.pedrini@gmail.com](mailto:vitorh.pedrini@gmail.com)  
